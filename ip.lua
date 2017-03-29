@@ -68,7 +68,7 @@ function custom_playlist_m3u8(server, client, request)
 	if not category then
 		category="all"
 	end
-	local token = (request.addr..os.date("%m%d")):md5():hex():lower()
+	local token = (request.addr..os.date("%m%W")):md5():hex():lower()
 	
 	local a = request.query.server
 	
@@ -153,7 +153,7 @@ function auth_request(client_id, request, callback)
 	if not mac then
 		mac="empty"
 	end
-	local token = (request.addr..os.date("%m%d")):md5():hex():lower()
+	local token = (request.addr..os.date("%m%W")):md5():hex():lower()
 	if request.query.token==token then
 		result = true		
 	    log.info("channel:" .. stat.channel_name .. " client:" .. stat.request.addr .." mac:"..mac.." initial:"..initial.. "  uptime:" .. uptime .. "min.")    
