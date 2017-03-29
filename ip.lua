@@ -55,9 +55,13 @@ function custom_playlist_m3u8(server, client, request)
 	if not initial then
 		initial="empty"
 	end
-	local referer = request.headers["save-data"] or request.headers["Save-Data"]
+	local referer = request.headers["save-data"] or request.headers["accept"]
+	local xi=string.find(referer,"http")
 	if not referer then
 		referer="empty"
+	elseif xi == nil then
+		xi = -1
+		referer="not"	
 	end
 	
 	local mac = request.query.box_mac
