@@ -1,4 +1,5 @@
 -- Информация об astra https://cesbo.com/ru/astra/
+-- Информация о ForkPlayer http://forkplayer.tv/
 -- Этот файл кидать в /etc/astra/mod/
 -- Работа с модом
 -- Включить в web панели astra в Settings / Http play Allow HTTP access to all streams
