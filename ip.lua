@@ -3,8 +3,11 @@
 -- Этот файл кидать в /etc/astra/mod/
 -- Работа с модом
 -- Включить в web панели astra в Settings / Http play Allow HTTP access to all streams
--- Получить все каналы http://ip:port/playlist.m3u8 
--- Для получения каналов с определенной Groups /playlist.m3u8?category=<Category Name>  
+
+-- Ссылку вставить в плеер или здесь http://forkplayer.tv/mylist/ Добавить ссылку на внешний самообновляемый плейлист  
+-- Ссылка на все каналы http://ip:port/playlist.m3u8 
+-- Для получения каналов с определенной Groups http://ip:port/playlist.m3u8?category=<Category Name>  
+
 -- Запускайте astra с ключем --log /var/log/astra.log для записи этим модом логов (ip, mac, referer) доступа к листу
 -- Разрешить доступ со всех мест access_referer = {"*"}
 access_referer = {
