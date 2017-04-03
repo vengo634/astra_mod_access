@@ -24,6 +24,10 @@ blocked_mac={
 	"empty",
 }
 
+-- Список ip адресов которые могут получать потоки напрямую, как они прописаны в output
+whitelist_ip={
+	"97.201.247.155",
+}
 
 local conlimitList = {}
 function valid(data, array)
@@ -82,8 +86,7 @@ function custom_playlist_m3u8(server, client, request)
 	if auth then
 		q="&auth="..auth
 	end
-	local ip =request.addr
-	
+	local ip = request.addr
 	local initial = request.query.initial
 	if not initial then
 		initial="empty"
@@ -472,6 +475,9 @@ function auth_request(client_id, request, callback)
     end
 
     local function check_access()
+		if valid(request.addr,whitelist_ip) then			
+			return true
+		end
         local groups = session_data.channel_data.config.groups
 
         if config_data.auth_options then
