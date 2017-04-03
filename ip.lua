@@ -75,10 +75,7 @@ function custom_playlist_m3u8(server, client, request)
 	if auth then
 		q="&auth="..auth
 	end
-	local ip = request.query.ip
-	if not ip then
-		ip=request.addr
-	end
+	local ip=request.addr
 	local initial = request.query.initial
 	if not initial then
 		initial="empty"
