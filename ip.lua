@@ -52,7 +52,7 @@ local urldecode = function(url)
   url = url:gsub("%%(%x%x)", hex_to_char)
   return url
 end
-
+ 
 function custom_playlist_m3u8(server, client, request)
     if not request then
         return nil
@@ -60,6 +60,9 @@ function custom_playlist_m3u8(server, client, request)
 	
 	
 	local referer = request.headers["save-data"] or request.headers["accept"]
+	if not referer then
+		referer=""
+	end
 	local xi=string.find(referer,"http")
 	if not referer then
 		referer="empty"
@@ -71,6 +74,10 @@ function custom_playlist_m3u8(server, client, request)
 	local auth = request.query.auth
 	if auth then
 		q="&auth="..auth
+	end
+	local ip = request.query.ip
+	if not ip then
+		ip=request.addr
 	end
 	local initial = request.query.initial
 	if not initial then
@@ -84,7 +91,7 @@ function custom_playlist_m3u8(server, client, request)
 	if not category then
 		category="all"
 	end
-	local token = (request.addr..os.date("%m%W")..initial..mac):md5():hex():lower()
+	local token = (initial..ip..os.date("%m%W")..mac):md5():hex():lower()
 	
 	local a = request.query.server
 	
@@ -97,7 +104,7 @@ function custom_playlist_m3u8(server, client, request)
     end
 	
 	if not valid("*",access_referer) and not valid(referer,access_referer) and not auth then
-		log.error("ABORT GETLIST category:" .. category .. " ip:" .. request.addr .." NEED ADD referer:" .. referer .." mac:"..mac.." initial:"..initial)
+		log.error("ABORT GETLIST category:" .. category .. " ip:" .. ip .." NEED ADD referer:" .. referer .." mac:"..mac.." initial:"..initial)
 		server:send(client, {
 			code = 200,
 			headers = { "Access-Control-Allow-Origin: *","Content-Type: text/html", "Connection: close" },
@@ -106,7 +113,7 @@ function custom_playlist_m3u8(server, client, request)
         return nil
 	end
 	
-	log.info("GETLIST category:" .. category .. " ip:" .. request.addr .." referer:" .. referer .." mac:"..mac.." initial:"..initial) 
+	log.info("GETLIST category:" .. category .. " ip:" .. ip .." referer:" .. referer .." mac:"..mac.." initial:"..initial) 
 	
 	local h = ""
     if config_data and config_data.settings and config_data.settings.http_play_hls then
@@ -176,7 +183,7 @@ function auth_request2(client_id, request, callback)
 	if not mac then
 		mac="empty"
 	end
-	local token = (request.addr..os.date("%m%W")..initial..mac):md5():hex():lower()
+	local token = (initial..request.addr..os.date("%m%W")..mac):md5():hex():lower()
 	if request.query.auth then		
 	
 	elseif valid(mac,blocked_mac) then
@@ -466,14 +473,14 @@ function auth_request(client_id, request, callback)
 		local mac = request.query.box_mac
 		if not mac then
 			mac="empty"
-		end
+		end		
         -- Проверка даты
         if user.date ~= nil and user.date < os.time() then
 			log.error("end date user:" .. login .. " client:" .. request.addr .." mac:"..mac.." initial:"..initial) 
             return false
         end
 		
-		local token = (request.addr..os.date("%m%W")..initial..mac):md5():hex():lower()
+		local token = (initial..request.addr..os.date("%m%W")..mac):md5():hex():lower()
 		if request.query.token~=token then
 			log.error("error token user:" .. login .. " client:" .. request.addr .." mac:"..mac.." initial:"..initial) 
 			return false
