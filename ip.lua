@@ -9,16 +9,23 @@
 -- Для получения каналов с определенной Groups http://ip:port/playlist.m3u8?category=<Category Name>  
 
 -- Запускайте astra с ключем --log /var/log/astra.log для записи этим модом логов (ip, mac, referer) доступа к листу
+
 -- Разрешить доступ со всех мест access_referer = {"*"}
 access_referer = {
+"*",
     "http://mylist.obovse.ru/forkiptv",
     "http://mylist.obovse.ru/iptv",
 }
 
+-- Лимит коннектов на один токен. Не действует на вход по логину:паролю
+limit_connections=1
 -- Блокировка мак адресов, empty - вход без мак адреса, например с другого виджета. Не действует на вход по логину:паролю
 blocked_mac={
 	"empty",
 }
+
+
+local conlimitList = {}
 function valid(data, array)
 	local u = { }
 	for _, v in ipairs(array) do u[v] = true end
@@ -75,7 +82,8 @@ function custom_playlist_m3u8(server, client, request)
 	if auth then
 		q="&auth="..auth
 	end
-	local ip=request.addr
+	local ip =request.addr
+	
 	local initial = request.query.initial
 	if not initial then
 		initial="empty"
@@ -164,9 +172,9 @@ function custom_playlist_m3u8(server, client, request)
 end
 
 function auth_request2(client_id, request, callback)
-    if not request then
-        return nil
-    end
+    local session_data = http_output_client_list[client_id]
+	
+   
 	local stat = http_output_client_list[client_id]
 	local uptime = math.floor((os.time() - stat.st) / 60)
 	local result = false
@@ -181,6 +189,9 @@ function auth_request2(client_id, request, callback)
 		mac="empty"
 	end
 	local token = (initial..request.addr..os.date("%m%W")..mac):md5():hex():lower()
+	
+session_data.token=token
+	
 	if request.query.auth then		
 	
 	elseif valid(mac,blocked_mac) then
@@ -190,11 +201,30 @@ function auth_request2(client_id, request, callback)
 	    log.info("channel:" .. stat.channel_name .. " client:" .. stat.request.addr .." mac:"..mac.." initial:"..initial.. "  uptime:" .. uptime .. "min.")    
 	else
 		log.error("NOT valid token channel:" .. stat.channel_name .. " client:" .. stat.request.addr .." mac:"..mac.." initial:"..initial.. " uptime:" .. uptime .. "min.") 
-	end
+	end	
+	
+	if limit_connections > 0 and not request.query.auth then
+		
+		local conlimit = conlimitList[token]
+		if not conlimit then
+			conlimit = {}
+			conlimitList[token] = conlimit
+		end
+		table.insert(conlimit, client_id)
+		-- Если подклчений больше лимита закрыть первое подключение
+		if #conlimit > tonumber(limit_connections) then
+			log.info("Close "..client_id.." limit "..#conlimit.." connections token "..token.." channel:" .. stat.channel_name .. " client:" .. stat.request.addr .." mac:"..mac.." initial:"..initial) 
+			local first_client_id = conlimit[1]
+			local first_session_data = http_output_client_list[first_client_id]
+			if first_session_data~=nil then
+			first_session_data.server:close(first_session_data.client)
+			end
+		end
+	end		
 	if not result and config_data.auth_options and config_data.auth_options.promo then
             -- Переадресация на промо-канал
 		callback(config_data.auth_options.promo)
-	else
+	else		
 		callback(result)
 	end
     
@@ -405,7 +435,6 @@ control_api["set-http-auth-options"] = function(server, client, request)
 end
 
 -- Авторизация --
-local conlimitList = {}
 function auth_request(client_id, request, callback)
     local session_data = http_output_client_list[client_id]
 
@@ -422,6 +451,20 @@ function auth_request(client_id, request, callback)
                 end
                 if #conlimit == 0 then
                     conlimitList[session_data.login] = nil
+                end
+            end
+        end
+		if session_data.token then
+            local conlimit = conlimitList[session_data.token]
+            if conlimit then
+                for k,v in ipairs(conlimit) do
+                    if v == client_id then
+                        table.remove(conlimit, k)
+                        break
+                    end
+                end
+                if #conlimit == 0 then
+                    conlimitList[session_data.token] = nil
                 end
             end
         end
