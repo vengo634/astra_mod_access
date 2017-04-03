@@ -11,7 +11,6 @@
 -- Запускайте astra с ключем --log /var/log/astra.log для записи этим модом логов (ip, mac, referer) доступа к листу
 -- Разрешить доступ со всех мест access_referer = {"*"}
 access_referer = {
-"*",
     "http://mylist.obovse.ru/forkiptv",
     "http://mylist.obovse.ru/iptv",
 }
@@ -85,7 +84,7 @@ function custom_playlist_m3u8(server, client, request)
 	if not category then
 		category="all"
 	end
-	local token = (request.addr..os.date("%m%W")..mac..initial):md5():hex():lower()
+	local token = (request.addr..os.date("%m%W")..initial..mac):md5():hex():lower()
 	
 	local a = request.query.server
 	
@@ -177,7 +176,7 @@ function auth_request2(client_id, request, callback)
 	if not mac then
 		mac="empty"
 	end
-	local token = (request.addr..os.date("%m%W")..mac..initial):md5():hex():lower()
+	local token = (request.addr..os.date("%m%W")..initial..mac):md5():hex():lower()
 	if request.query.auth then		
 	
 	elseif valid(mac,blocked_mac) then
@@ -474,7 +473,7 @@ function auth_request(client_id, request, callback)
             return false
         end
 		
-		local token = (request.addr..os.date("%m%W")..mac..initial):md5():hex():lower()
+		local token = (request.addr..os.date("%m%W")..initial..mac):md5():hex():lower()
 		if request.query.token~=token then
 			log.error("error token user:" .. login .. " client:" .. request.addr .." mac:"..mac.." initial:"..initial) 
 			return false
