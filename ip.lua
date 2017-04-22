@@ -9,24 +9,14 @@
 -- Для получения каналов с определенной Groups http://ip:port/playlist.m3u8?category=<Category Name>  
 
 -- Запускайте astra с ключем --log /var/log/astra.log для записи этим модом логов (ip, mac, referer) доступа к листу
-
 -- Разрешить доступ со всех мест access_referer = {"*"}
 access_referer = {
-"*",
-    "http://mylist.obovse.ru/forkiptv",
-    "http://mylist.obovse.ru/iptv",
+    "*",
 }
-
--- Лимит коннектов на один токен. Не действует на вход по логину:паролю
 limit_connections=1
 -- Блокировка мак адресов, empty - вход без мак адреса, например с другого виджета. Не действует на вход по логину:паролю
 blocked_mac={
 	"empty",
-}
-
--- Список ip адресов которые могут получать потоки напрямую, как они прописаны в output
-whitelist_ip={
-	"97.201.247.155",
 }
 
 local conlimitList = {}
@@ -63,7 +53,7 @@ local urldecode = function(url)
   url = url:gsub("%%(%x%x)", hex_to_char)
   return url
 end
- 
+
 function custom_playlist_m3u8(server, client, request)
     if not request then
         return nil
@@ -86,7 +76,8 @@ function custom_playlist_m3u8(server, client, request)
 	if auth then
 		q="&auth="..auth
 	end
-	local ip = request.addr
+	local ip=request.addr
+	
 	local initial = request.query.initial
 	if not initial then
 		initial="empty"
@@ -133,6 +124,28 @@ function custom_playlist_m3u8(server, client, request)
 	for k,c in pairs(channel_list_ID) do
 		if c.config.enable ~= false then
 			local add=false
+			local cat=""
+			local epg_name=""
+			
+			if not c.config.service_name then
+				epg_name=""
+			else
+				epg_name=" tvg-name=\""..c.config.service_name.."\""
+			end
+			if not c.config.groups then
+				cat=""
+			else
+				for kk,vv in pairs(c.config.groups) do
+					if cat ~= "" then
+						cat = cat..";"
+					end
+					cat = cat..c.config.groups[kk]
+				end
+				if cat ~= "" then
+						cat = " group-title=\""..cat.."\""
+				end
+			end
+			
 			if category=="all" then 
 				add=true
 			else
@@ -148,6 +161,8 @@ function custom_playlist_m3u8(server, client, request)
 			end
 			if add then			
 				table.insert(x, {
+				epg_name = epg_name,
+				group = cat,
 				name = c.config.name,
 				link = "http://" .. a .. "/play/" .. k ..h.. "?token=" .. token .. "&box_mac="..mac.."&initial="..urlencode(initial)..q,
 			})
@@ -161,7 +176,7 @@ function custom_playlist_m3u8(server, client, request)
 	
     local p = "#EXTM3U\r\n"
 	for _,c in ipairs(x) do
-        p = p .. "#EXTINF:-1," .. c.name .. "\r\n" .. c.link .. "\r\n"
+        p = p .. "#EXTINF:-1"..c.epg_name..c.group.."," .. c.name .. "\r\n" .. c.link .. "\r\n"
     end
 	
 	if p == "#EXTM3U\r\n" then 
@@ -175,11 +190,22 @@ function custom_playlist_m3u8(server, client, request)
 end
 
 function auth_request2(client_id, request, callback)
-    local session_data = http_output_client_list[client_id]
+ local session_data = http_output_client_list[client_id]
+ if not request then     
+        return nil
+    end
 	
-   
 	local stat = http_output_client_list[client_id]
 	local uptime = math.floor((os.time() - stat.st) / 60)
+	
+	--Разрешить по ip без лимитов и по прямой ссылке
+	if request.addr == "163.172.67.22" or request.addr == "51.15.2.24" then
+		log.info("channel ok:" .. stat.channel_name .. " IP WHITE LIST client:" .. request.addr)
+		callback(true)
+		return
+	end
+	
+	
 	local result = false
 	local mac = request.query.box_mac
 	local initial = request.query.initial
@@ -192,11 +218,9 @@ function auth_request2(client_id, request, callback)
 		mac="empty"
 	end
 	local token = (initial..request.addr..os.date("%m%W")..mac):md5():hex():lower()
-	
-session_data.token=token
-	
+	session_data.token=token
 	if request.query.auth then		
-	
+	 
 	elseif valid(mac,blocked_mac) then
 		log.error("Blocked mac channel:" .. stat.channel_name .. " client:" .. stat.request.addr .." mac:"..mac.." initial:"..initial.. " uptime:" .. uptime .. "min.") 
 	elseif request.query.token==token then
@@ -204,10 +228,9 @@ session_data.token=token
 	    log.info("channel:" .. stat.channel_name .. " client:" .. stat.request.addr .." mac:"..mac.." initial:"..initial.. "  uptime:" .. uptime .. "min.")    
 	else
 		log.error("NOT valid token channel:" .. stat.channel_name .. " client:" .. stat.request.addr .." mac:"..mac.." initial:"..initial.. " uptime:" .. uptime .. "min.") 
-	end	
+	end
 	
 	if limit_connections > 0 and not request.query.auth then
-		
 		local conlimit = conlimitList[token]
 		if not conlimit then
 			conlimit = {}
@@ -216,10 +239,10 @@ session_data.token=token
 		table.insert(conlimit, client_id)
 		-- Если подклчений больше лимита закрыть первое подключение
 		if #conlimit > tonumber(limit_connections) then
-			log.info("Close "..client_id.." limit "..#conlimit.." connections token "..token.." channel:" .. stat.channel_name .. " client:" .. stat.request.addr .." mac:"..mac.." initial:"..initial) 
 			local first_client_id = conlimit[1]
 			local first_session_data = http_output_client_list[first_client_id]
 			if first_session_data~=nil then
+			log.info("Close "..client_id.." limit "..#conlimit.." connections token "..token.." channel:" .. stat.channel_name .. " client:" .. stat.request.addr .." mac:"..mac.." initial:"..initial) 
 			first_session_data.server:close(first_session_data.client)
 			end
 		end
@@ -227,7 +250,7 @@ session_data.token=token
 	if not result and config_data.auth_options and config_data.auth_options.promo then
             -- Переадресация на промо-канал
 		callback(config_data.auth_options.promo)
-	else		
+	else
 		callback(result)
 	end
     
@@ -440,6 +463,7 @@ end
 -- Авторизация --
 function auth_request(client_id, request, callback)
     local session_data = http_output_client_list[client_id]
+	
 
     -- Завершение подключения
     if not request then
@@ -475,9 +499,6 @@ function auth_request(client_id, request, callback)
     end
 
     local function check_access()
-		if valid(request.addr,whitelist_ip) then			
-			return true
-		end
         local groups = session_data.channel_data.config.groups
 
         if config_data.auth_options then
