@@ -1,3 +1,12 @@
+Что такое astra и ее установка https://cesbo.com/en/astra/
+
+Если планируется использовать этот mod вместе с другими (в папке /etc/astra/mod/ есть еще файлы кроме этого мода ip.lua) и возникает ошибка 
+  error in call to Lua API attempt to index global 'control_server_instance'
+то удаляем из ip.lua строки 
+  control_server_instance:remove("/playlist.m3u8")
+  control_server_instance:insert("/playlist.m3u8", custom_playlist_m3u8)
+ и добавляем control_server_instance:insert("/otheriptv.m3u8", custom_playlist_m3u8) в конец другого мода, используещего эту функцию
+
 # astra_mod_access
 Доступ к Astra с ForkPlayer с генерацией токенов, все потоки  внутри плейлиста генерируются под пользователя и доступны только ему
 Зайдя в админку astra каналам можно задавать groups (будет разбивка на категории в выходном m3u листе) и задать epg код в SERVICE / SERVICE NAME. Сам епг код  можно найти в ForkPlayer нажав на канале Меню \ ЕПГ код
