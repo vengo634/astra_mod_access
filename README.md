@@ -23,8 +23,8 @@ whitelist_ip - список ip адресов которым будут дост
 Интеграция с ForkPlayer
 access_referer - разрешить вход в плейлист с определенного адреса, указываем * если всем включая другие плеера кроме ForkPlayer 
   здесь http://forkplayer.tv/mylist/ создаем раздел, настраиваем разделу доступ по мак адресам или всем
-  внутри добавляем ссылку на плейлист  http://server:port/playlist.m3u8 (весь плейлист)
-  или http://server:port/playlist.m3u8?category=<Category Name> где <Category Name> указываем с settings-groups
+  внутри добавляем ссылку на плейлист  http://server:port/playlist.m3u8?no_save (весь плейлист)
+  или http://server:port/playlist.m3u8?no_save&category=<Category Name> где <Category Name> указываем с settings-groups
   прописываем access_referer = {"http://mylist.obovse.ru/<Имя раздела>",}
 limit_connections - количество одновременных потоков для одного токена, обычно достаточно 1-го
 blocked_mac - закрыть доступ определенным мак адресам, empty - пустой мак адрес (может возникать если лист будут открывать напрямую или не в ForkPlayer)
