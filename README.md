@@ -5,7 +5,11 @@
 то удаляем из ip.lua строки 
   control_server_instance:remove("/playlist.m3u8")
   control_server_instance:insert("/playlist.m3u8", custom_playlist_m3u8)
- и добавляем control_server_instance:insert("/otheriptv.m3u8", custom_playlist_m3u8) в конец другого мода, используещего эту функцию
+ и добавляем в конец другого мода, используещего глобальный индекс control_server_instance
+    if pcall(custom_playlist_m3u8) then 
+	    control_server_instance:insert("/iptv.m3u8", custom_playlist_m3u8)
+    end
+
 
 # astra_mod_access
 Доступ к Astra с ForkPlayer с генерацией токенов, все потоки  внутри плейлиста генерируются под пользователя и доступны только ему
