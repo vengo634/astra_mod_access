@@ -106,7 +106,7 @@ function custom_playlist_m3u8(server, client, request)
 		log.error("ABORT GETLIST category:" .. category .. " ip:" .. ip .." NEED ADD referer:" .. referer .." mac:"..mac.." initial:"..initial)
 		server:send(client, {
 			code = 200,
-			headers = { "Access-Control-Allow-Origin: *","Content-Type: text/html", "Connection: close" },
+			headers = { "Access-Control-Allow-Origin: *","Access-Control-Allow-Headers: Accept, Content-Type","Content-Type: text/html", "Connection: close" },
 			content = "#EXTM3U\r\n#EXTINF:-1,Abort access from:" .. referer.."\r\nhttp://null\r\n",
 		})
         return nil
